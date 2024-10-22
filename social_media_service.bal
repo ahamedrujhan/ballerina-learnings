@@ -30,8 +30,6 @@ table<User> key(id) users = table [
     {id: 1, name: "Ruju", dateOfBirth: {year: 2001, month: 1, day: 5}, mobileNumber: "0775785129"}
 ];
 
-
-
 service /social\-media on new http:Listener(9090) {
     resource function get users() returns User[]|error? {
         // User ruju = {id: 1,name: "Ruju",dateOfBirth: {year: 2001, month: 1, day: 5}, mobileNumber: "0775785129"};
@@ -52,8 +50,8 @@ service /social\-media on new http:Listener(9090) {
         return user;
     }
 
-    resource function post users(NewUser newUser) returns http:Created | error {
-        users.add({id: users.length()+1, name: newUser.name, mobileNumber: newUser.mobileNumber, dateOfBirth: newUser.dateOfBirth});
+    resource function post users(NewUser newUser) returns http:Created|error {
+        users.add({id: users.length() + 1, name: newUser.name, mobileNumber: newUser.mobileNumber, dateOfBirth: newUser.dateOfBirth});
 
         return http:CREATED;
     }
