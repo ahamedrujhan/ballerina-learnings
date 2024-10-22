@@ -88,9 +88,9 @@ service /social\-media on new http:Listener(9090) {
         insert into users (birth_date,name,mobile_number)
          values (${newUser.dateOfBirth}, ${newUser.name},${newUser.mobileNumber});`);
 
-          _=  check socialMediaDb->execute(`
-        insert into users (birth_date,name,mobile_number)
-         values (${newUser.dateOfBirth}, ${newUser.name},${newUser.mobileNumber});`);
+        //   _=  check socialMediaDb->execute(`
+        // insert into users (birth_date,name,mobile_number)
+        //  values (${newUser.dateOfBirth}, ${newUser.name},${newUser.mobileNumber});`);
 
           check commit;
       }
