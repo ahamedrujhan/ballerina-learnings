@@ -35,6 +35,7 @@ type NewUser record {
     string mobileNumber;
 };
 
+
 table<User> key(id) users = table [
     {id: 1, name: "Ruju", dateOfBirth: {year: 2001, month: 1, day: 5}, mobileNumber: "0775785129"}
 ];
@@ -81,9 +82,24 @@ service /social\-media on new http:Listener(9090) {
 
         // return http:CREATED;
 
-      _=  check socialMediaDb->execute(`
+//tranaction block
+      transaction {
+        _=  check socialMediaDb->execute(`
         insert into users (birth_date,name,mobile_number)
          values (${newUser.dateOfBirth}, ${newUser.name},${newUser.mobileNumber});`);
+
+          _=  check socialMediaDb->execute(`
+        insert into users (birth_date,name,mobile_number)
+         values (${newUser.dateOfBirth}, ${newUser.name},${newUser.mobileNumber});`);
+
+          check commit;
+      }
+
+          
+        //   ReturnType returnType = {
+        //     code: http:CREATED,
+        //     value: value,
+        //   }
 
          return http:CREATED;
     }
