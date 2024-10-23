@@ -1,4 +1,5 @@
 import ballerina/http;
+import ballerina/lang.regexp;
 import ballerina/sql;
 import ballerina/time;
 import ballerinax/postgresql;
@@ -43,15 +44,18 @@ type DatabseConfig record {|
     int port;
 |};
 
+type Meta record {|
+    string[] tags;
+    string category;
+    @sql:Column {name: "created_date"}
+    time:Date created_date;
+|};
+
 type PostWithMeta record {|
     readonly int id;
     string description;
-    record {|
-        string[] tags;
-        string category;
-        @sql:Column {name: "created_date"}
-        time:Date created_date;
-    |} meta;
+    Meta meta;
+
 |};
 
 type Post record {|
@@ -62,6 +66,18 @@ type Post record {|
     @sql:Column {name: "created_date"}
     time:Date created_date;
 |};
+
+//post to postWithDataMapper function
+function postToPostWithMeta(Post[] post) returns PostWithMeta[] => from var postItem in post
+    select {
+        id: postItem.id,
+        description: postItem.description,
+        meta: {
+            tags: regexp:split(re `,`, postItem.tags),
+            category: postItem.category,
+            created_date: postItem.created_date
+        }
+    };
 
 table<User> key(id) users = table [
     {id: 1, name: "Ruju", dateOfBirth: {year: 2001, month: 1, day: 5}, mobileNumber: "0775785129"}
@@ -133,14 +149,17 @@ service /social\-media on new http:Listener(9090) {
         return http:CREATED;
     }
 
-    resource function get users/[int id]/posts() returns Post[]|UserNotFound|error {
+    resource function get users/[int id]/posts() returns UserNotFound|PostWithMeta[]|error {
 
         User|error result = socialMediaDb->queryRow(`select * from users where id = ${id}`);
 
         if result is sql:NoRowsError {
 
-            ErrorDetails errorDetails = {message: string `user with id ${id} not found`, details: string `users/${id}/posts` ,
-            timeStamp: time:utcNow()};
+            ErrorDetails errorDetails = {
+                message: string `user with id ${id} not found`,
+                details: string `users/${id}/posts`,
+                timeStamp: time:utcNow()
+            };
 
             UserNotFound userNotFound = {
                 body: errorDetails
@@ -150,7 +169,12 @@ service /social\-media on new http:Listener(9090) {
 
         stream<Post, sql:Error?> postStream = socialMediaDb->query(`SELECT id, description, category, created_date, tags FROM posts WHERE user_id = ${id}`);
 
-        return from var post in postStream 
-        select post;
+        Post[]|error posts = from Post post in postStream select post;
+
+        return postToPostWithMeta(check posts);
+        
+
+        // return from var post in postStream
+        //     select post;
     }
 }
