@@ -108,7 +108,10 @@ table<User> key(id) users = table [
 //Postgres clinet
 
 configurable DatabseConfig databseConfig = ?; //we can provide fallback values if we want
-postgresql:Client socialMediaDb = check new (...databseConfig);
+final postgresql:Client socialMediaDb = check initSocialMediaDb();
+
+//setup mock client for testing...
+function initSocialMediaDb() returns postgresql:Client|error => check new (...databseConfig);
 
 //Http client
 configurable string sentimentApiEndPoint = ?;
