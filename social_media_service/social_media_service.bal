@@ -4,6 +4,8 @@ import ballerina/sql;
 import ballerina/time;
 import ballerinax/postgresql;
 import ballerinax/postgresql.driver as _;
+import ballerinax/slack;
+import ballerina/log;
 
 type User record {|
     readonly int id;
@@ -89,6 +91,11 @@ type Probability record {|
     decimal pos;
 |};
 
+type SlackConfig record {|
+    string authToken;
+    string channelName;
+|};
+
 //post to postWithDataMapper function
 function postToPostWithMeta(Post[] post) returns PostWithMeta[] => from var postItem in post
     select {
@@ -117,9 +124,20 @@ function initSocialMediaDb() returns postgresql:Client|error => check new (...da
 configurable string sentimentApiEndPoint = ?;
 http:Client sentimentEndPoint = check new (sentimentApiEndPoint);
 
+//Slack Connector
+configurable SlackConfig slackconfig = ?;
+slack:Client slackClient = check new({
+    auth: {
+        token: slackconfig.authToken
+    }
+    
+});
+
 
 service /social\-media on new http:Listener(9090) {
-
+public function init() {
+    log:printInfo("social media service started....");
+}
     //get All users
     resource function get users() returns User[]|error? {
         // User ruju = {id: 1,name: "Ruju",dateOfBirth: {year: 2001, month: 1, day: 5}, mobileNumber: "0775785129"};
@@ -249,7 +267,11 @@ service /social\-media on new http:Listener(9090) {
 
         //create the post to Db
         _=check socialMediaDb->execute(`insert into posts (description,category,tags,user_id,created_date) values (${newPost.description}, ${newPost.category}, ${newPost.tags},${id},${time:utcNow()});`);
+        //after post is updated to db we need to send a message in slack 
+        _=check slackClient->/chat\.postMessage.post({
+            channel: "post-notifications",
+            text: string `User ${user.name} has posted a new post`
+        });
         return http:CREATED;
-
     }
 }

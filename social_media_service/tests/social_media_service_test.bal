@@ -16,14 +16,12 @@ function testUsersById() returns error? {
         name: "kalam",
         dateOfBirth: {year: 1978, month: 7, day: 15},
         mobileNumber: "0777123123"
-    }
+    };
     //tell when mock is executing what is expected
     test:prepare(socialMediaDb).when("queryRow").thenReturn(userExpected);
 
     //using http client to trigger the test function
-    configurable string socialMediaEndPointUrl = check ?;
-    http:Client socialMediaEndPoint = check new(socialMediaEndPointUrl)
-    User userActual = socialMediaEndPoint->/users/[userExpected.id.toString()];
-
-    test:assertEquals(userActual,userExpected);
+    // configurable string socialMediaEndPointUrl = ?;
+    http:Client socialMediaEndPoint = check new("localhost:9090/social-media");
+    User userActual = check socialMediaEndPoint->/users/[userExpected.id.toString()]; test:assertEquals(userActual,userExpected);
 }
